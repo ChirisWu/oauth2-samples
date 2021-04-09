@@ -7,6 +7,10 @@
     <groupId>org.javaboy</groupId>
     <artifactId>jwt</artifactId>
     <version>1.0-SNAPSHOT</version>
-
+    <modules>
+        <module>auth-server</module>
+        <module>client-app</module>
+        <module>user-server</module>
+    </modules>
 
 </project>

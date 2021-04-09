@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tencent.chiris.projectrank.mapper.ProjectStarRankMapper">
+
+    <resultMap id="RankResultMap" type="com.tencent.chiris.projectrank.model.ProjectStarRank">
+        <id column="id" property="id"/>
+        <result column="type" property="type"/>
+        <result column="category_id" property="categoryId"/>
+        <result column="target_id" property="targetId"/>
+        <result column="star" property="star"/>
+        <result column="rank" property="rank"/>
+        <result column="task_at" property="taskAt"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+    	`id`, `type`, `category_id`, `target_id`, `star`, `rank`, `task_at`, `created_at`
+  	</sql>
+
+    <select id="getLastTaskDate" resultType="java.util.Date">
+        select task_at from project_star_rank where type = #{type} order by task_at desc limit 1
+    </select>
+    <select id="getLastStarRank" resultMap="RankResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from project_star_rank where type = #{type} and target_id = #{targetId} order by task_at desc limit 1
+    </select>
+    <select id="getTotalFast" resultType="java.lang.Integer">
+        select count(*) from project_star_rank use index(index_proj_star_on_task_at_full) where task_at = #{taskDate} and type = #{type}
+    </select>
+    <!-- 排名统计 -->
+    <select id="processProjectRecentRank" resultMap="RankResultMap">
+        select *, 0 category_id, #{ctype} type, #{taskDate} task_at, case when @preRank = star then @curRank when ((@preRank:=star)&gt;-1) then @curRank := @curRank + 1 end `rank`
+        from(
+        select p.id target_id, ifnull(sum(usp.num),0) star from projects p left join users_star_projects usp on p.id = usp.project_id and usp.created_at &gt;= #{startDate} and usp.created_at &lt; #{endDate}
+        inner join namespaces ns on p.namespace_id = ns.id and ns.path != 'wiki_group'
+        where p.visibility_level in
+        <foreach close=")" collection="visibilityLevels" index="index" item="item" open="(" separator=",">
+            #{item}
+        </foreach>
+        group by p.id
+        ) c, (select @curRank := 0, @preRank := null ) d order by star desc
+    </select>
+
+    <select id="processProjectInnerSourceRecentRank" resultMap="RankResultMap">
+        select *, 0 category_id, #{ctype} type, #{taskDate} task_at, case when @preRank = star then @curRank when ((@preRank:=star)&gt;-1) then @curRank := @curRank + 1 end `rank`
+        from(
+        select p.id target_id, ifnull(sum(usp.num),0) star from projects p left join users_star_projects usp on p.id = usp.project_id and usp.created_at &gt;= #{startDate} and usp.created_at &lt; #{endDate}
+        inner join namespaces ns on p.namespace_id = ns.id and ns.path != 'wiki_group'
+        left join taggings on p.id = taggings.project_id left join tags on taggings.tag_id = tags.id
+        where p.visibility_level in
+        <foreach close=")" collection="visibilityLevels" index="index" item="item" open="(" separator=",">
+            #{item}
+        </foreach>
+        and tags.name = 'inner_source'
+        group by p.id
+        ) c, (select @curRank := 0, @preRank := null ) d order by star desc
+    </select>
+    <select id="processGroupRank" resultMap="RankResultMap">
+        <![CDATA[
+        select *, 0 category_id, #{ctype} type, #{taskDate} task_at, case when @preRank = star then @curRank when ((@preRank:=star)>-1) then @curRank := @curRank + 1 end `rank`
+        from(
+          select ns.id target_id, sum(rk.star) star from projects p, namespaces ns, project_star_rank rk
+          where p.namespace_id = ns.id and ns.type = 'Group' and ns.path != 'wiki_group' and rk.task_at = #{taskDate} and rk.type = #{projectRankType} and rk.target_id = p.id
+          group by ns.id
+        ) c, (select @curRank := 0, @preRank := null ) d order by star desc
+        ]]>
+    </select>
+    <select id="processTagProjectRank" resultMap="RankResultMap">
+        <![CDATA[
+        select *, 0 category_id, #{ctype} type, #{taskDate} task_at, case when @preRank = star then @curRank when ((@preRank:=star)>-1) then @curRank := @curRank + 1 end `rank`
+        from(
+            select tags.id target_id, sum(rk.star) star from tags, taggings tp, project_star_rank rk
+            where tags.id = tp.tag_id and tags.name != 'inner_source' and tp.taggable_type = 'Project' and rk.task_at = #{taskDate} and rk.type = #{projectRankType} and rk.target_id = tp.taggable_id
+            group by tags.id
+        ) c, (select @curRank := 0, @preRank := null ) d order by star desc
+        ]]>
+    </select>
+
+    <insert id="insertRanks">
+        insert into project_star_rank (`type`, `category_id`, `target_id`, `star`, `rank`, `task_at`, `created_at`)
+        values
+        <foreach collection="records" item="record" separator=",">
+            (#{record.type}, #{record.categoryId}, #{record.targetId}, #{record.star}, #{record.rank}, #{record.taskAt}, now())
+        </foreach>
+    </insert>
+
+    <delete id="deleteRanks">
+        delete from project_star_rank where task_at = #{taskDate}
+    </delete>
+</mapper>

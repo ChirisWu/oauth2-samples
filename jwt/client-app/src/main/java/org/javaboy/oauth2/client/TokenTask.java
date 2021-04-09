@@ -1,6 +1,7 @@
 package org.javaboy.oauth2.client;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -38,10 +39,17 @@ public class TokenTask {
             map.add("client_secret", "123");
             map.add("redirect_uri", "http://localhost:8082/index.html");
             map.add("grant_type", "authorization_code");
-            Map<String, String> resp = restTemplate.postForObject("http://localhost:8080/oauth/token", map, Map.class);
-            System.out.println(resp);
-            access_token = resp.get("access_token");
-            refresh_token = resp.get("refresh_token");
+//            Map<String, String> resp = restTemplate.postForObject("http://localhost:8080/oauth/token", map, Map.class);
+            try{
+                ResponseEntity<String> res = restTemplate.exchange("http://localhost:8080/oauth/toekn", HttpMethod.POST, new HttpEntity<>(map), new ParameterizedTypeReference<String>() {
+                });
+                System.out.println(res.getBody());
+            }catch (Exception e){
+                System.out.println(e);
+            }
+//            System.out.println(resp);
+//            access_token = resp.get("access_token");
+//            refresh_token = resp.get("refresh_token");
             return loadDataFromResServer();
         } else {
             return loadDataFromResServer();
