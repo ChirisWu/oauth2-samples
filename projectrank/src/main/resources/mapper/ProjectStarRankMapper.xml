@@ -88,4 +88,15 @@
     <delete id="deleteRanks">
         delete from project_star_rank where task_at = #{taskDate}
     </delete>
+
+    <select id="processGroupRankWithoutRank" resultMap="RankResultMap">
+        select 0, category_id, #{ctype} type, #{taskDate} task_at, ns.id target_id, sum(rk.star) star from projects p, namespaces ns, project_star_rank rk
+        where p.namespace_id = ns.id and ns.type = 'Group' and ns.path != 'wiki_group' and rk.task_at = #{taskDate} and rk.type = #{projectRankType} and rk.target_id = p.id
+        group by ns.id
+    </select>
+
+
+    <update id="updateStart">
+        update project_star_rank set star = #{star} where id = #{id} and task_at = #{taskDate}
+    </update>
 </mapper>

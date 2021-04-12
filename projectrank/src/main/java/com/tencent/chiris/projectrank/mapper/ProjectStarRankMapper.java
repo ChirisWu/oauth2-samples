@@ -7,6 +7,7 @@ import org.apache.ibatis.annotations.Param;
 import java.util.Date;
 import java.util.List;
 
+@Mapper
 public interface ProjectStarRankMapper {
 
     int insertRanks(@Param("records") List<ProjectStarRank> records);
@@ -27,4 +28,10 @@ public interface ProjectStarRankMapper {
     List<ProjectStarRank> processGroupRank(@Param("ctype") int categoryType, @Param("projectRankType") int projectRankType, @Param("taskDate") Date taskDate);
 
     List<ProjectStarRank> processTagProjectRank(@Param("ctype") int categoryType, @Param("projectRankType") int projectRankType, @Param("taskDate") Date taskDate);
+
+    //
+    List<ProjectStarRank> processGroupRankWithoutRank(@Param("ctype") int categoryType, @Param("projectRankType") int projectRankType, @Param("taskDate") Date taskDate);
+
+    int updateStart(@Param("id") Integer id, @Param("star") Integer star, @Param("taskDate") Date taskDate);
+
 }
