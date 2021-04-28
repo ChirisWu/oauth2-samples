@@ -99,4 +99,14 @@
     <update id="updateStart">
         update project_star_rank set star = #{star} where id = #{id} and task_at = #{taskDate}
     </update>
+
+    <delete id="deleteRankByIds">
+        delete from project_star_rank where id in
+        <foreach collection="ids" item="id" open="(" close=")" index="index" separator=",">
+            #{id}
+        </foreach>
+    </delete>
+    <select id="getRankIdsBeforeDate" resultType="integer">
+            select id from project_star_rank where task_at &lt; #{taskDate} limit 20000
+    </select>
 </mapper>

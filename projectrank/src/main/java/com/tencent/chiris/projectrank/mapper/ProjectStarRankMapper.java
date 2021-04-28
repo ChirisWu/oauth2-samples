@@ -34,4 +34,8 @@ public interface ProjectStarRankMapper {
 
     int updateStart(@Param("id") Integer id, @Param("star") Integer star, @Param("taskDate") Date taskDate);
 
+    int deleteRankByIds(@Param("ids") List<Integer> ids);
+
+    List<Integer> getRankIdsBeforeDate(Date taskDate);
+
 }
